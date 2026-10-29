@@ -1,4 +1,4 @@
-name: 🤖 Vibe Coding Agent (Full Files Only)
+name: 🤖 Vibe Coding Agent (GitHub Runner)
 
 on:
   issues:
@@ -8,34 +8,35 @@ on:
 
 jobs:
   vibe-build-loop:
+    # Evita que el bot responda a sus propios comentarios en el chat
     if: github.event.comment.user.login != 'github-actions[bot]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Ejecuta en los servidores gratuitos de GitHub
 
     steps:
-    - name: Checkout del repositorio
+    - name: 📂 Checkout del repositorio
       uses: actions/checkout@v4
 
-    - name: Configurar Caché de Ollama
+    - name: 💾 Configurar Caché de Ollama
       id: cache-ollama
       uses: actions/cache@v4
       with:
         path: ~/.ollama
         key: ${{ runner.os }}-ollama-qwen25-3b
 
-    - name: Levantar Ollama Local
+    - name: 🦙 Instalar y Levantar Ollama Local
       uses: pydantic/ollama-action@v3
       with:
-        model: 'qwen2.5-coder:3b'
+        model: 'qwen2.5-coder:3b' # Modelo ideal para la RAM del runner de GitHub
 
-    - name: Configurar Python
+    - name: 🐍 Configurar Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Instalar dependencias del script
+    - name: 📦 Instalar dependencias del script
       run: pip install requests
 
-    - name: Ejecutar Agente con Bucle de Auto-Corrección
+    - name: 🤖 Ejecutar Agente (Bucle de Auto-Corrección)
       id: agent-loop
       env:
         PROMPT_CHAT: ${{ github.event.comment.body || github.event.issue.body }}
@@ -43,12 +44,13 @@ jobs:
       run: |
         python .github/scripts/vibe_agent.py
 
-    - name: Publicar Resultado en el Chat del Issue
+    - name: 💬 Publicar Resultado en el Chat del Issue
+      if: always() # Se ejecuta aunque el script falle para reportar el error
       uses: actions/github-script@v7
       with:
         script: |
           const fs = require('fs');
-          let reporte = "❌ El agente falló de manera crítica.";
+          let reporte = "❌ El agente falló de manera crítica al inicializar.";
           if (fs.existsSync('vibe_report.txt')) {
             reporte = fs.readFileSync('vibe_report.txt', 'utf8');
           }
